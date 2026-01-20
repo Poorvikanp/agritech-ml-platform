@@ -18,11 +18,7 @@ This project focuses on crop recommendation and will later include disease detec
 💬 (Upcoming) RAG-based assistant for government schemes
 
 🛠️ Tech Stack
-
 Python
-
 Pandas, NumPy
-
 Scikit-learn
-
 Git & GitHub
