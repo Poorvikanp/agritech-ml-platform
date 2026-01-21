@@ -19,3 +19,26 @@ X_test_scaled = scaler.transform(X_test)
 
 print("Preprocessing complete!")
 print(X_train_scaled.shape, X_test_scaled.shape)
+
+# Why did you use StandardScaler?
+# “Because my features had different ranges, 
+# I applied StandardScaler to normalize them so that no feature dominates the
+# learning process and the model performs more reliably.”
+
+# When You SHOULD Use StandardScaler
+
+# Use when:
+# ✔ Features have different units
+# ✔ Using distance-based or tree-based ML
+# ✔ Want faster convergence
+# ✔ Comparing multiple models
+
+# When You DON’T Need It
+
+# Not required when:
+
+# Using categorical features only
+
+# Using tree-based models sometimes (but still good practice)
+
+# Data already normalized
