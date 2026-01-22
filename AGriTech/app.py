@@ -1,6 +1,8 @@
 from flask import Flask, request, jsonify
 import joblib
 import numpy as np
+from flask import render_template
+
 
 print("Starting Flask app...")
 
@@ -12,9 +14,11 @@ scaler = joblib.load("AGriTech/scaler.pkl")
 
 REQUIRED_FIELDS = ["N", "P", "K", "temperature", "humidity", "ph", "rainfall"]
 
+
 @app.route("/")
 def home():
-    return "AgriTech Crop Recommendation API is running!"
+    return render_template("index.html")
+
 
 @app.route("/predict-crop", methods=["POST"])
 def predict_crop():
