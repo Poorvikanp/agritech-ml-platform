@@ -1,5 +1,8 @@
 AgriTech – Smart Farming Solutions 🌱
 
+Project in active development.
+
+
 AgriTech is a machine learning–based smart agriculture project aimed at helping farmers make better decisions using data-driven insights.
 This project focuses on crop recommendation and will later include disease detection and an AI-based assistant for government schemes.
 
