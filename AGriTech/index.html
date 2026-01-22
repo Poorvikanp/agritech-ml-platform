@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AgriTech Crop Recommendation</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f9f4;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .container {
+      background: #ffffff;
+      padding: 25px;
+      border-radius: 10px;
+      width: 350px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    h2 {
+      text-align: center;
+      color: #2e7d32;
+    }
+
+    input {
+      width: 100%;
+      padding: 8px;
+      margin: 6px 0;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      background-color: #2e7d32;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #1b5e20;
+    }
+
+    .result {
+      margin-top: 15px;
+      padding: 10px;
+      background-color: #e8f5e9;
+      border-radius: 5px;
+      text-align: center;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>AgriTech Crop Recommendation</h2>
+
+  <input type="number" id="N" placeholder="Nitrogen (N)" />
+  <input type="number" id="P" placeholder="Phosphorus (P)" />
+  <input type="number" id="K" placeholder="Potassium (K)" />
+  <input type="number" id="temperature" placeholder="Temperature" />
+  <input type="number" id="humidity" placeholder="Humidity" />
+  <input type="number" id="ph" placeholder="pH" />
+  <input type="number" id="rainfall" placeholder="Rainfall" />
+
+  <button onclick="predictCrop()">Predict Crop</button>
+
+  <div class="result" id="resultBox"></div>
+</div>
+
+<script>
+  async function predictCrop() {
+    const data = {
+      N: document.getElementById("N").value,
+      P: document.getElementById("P").value,
+      K: document.getElementById("K").value,
+      temperature: document.getElementById("temperature").value,
+      humidity: document.getElementById("humidity").value,
+      ph: document.getElementById("ph").value,
+      rainfall: document.getElementById("rainfall").value
+    };
+
+    const response = await fetch("/predict-crop", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(data)
+    });
+
+    const result = await response.json();
+
+    const resultBox = document.getElementById("resultBox");
+
+    if (result.error) {
+      resultBox.style.display = "block";
+      resultBox.innerHTML = `<b>Error:</b> ${result.error}`;
+    } else {
+      resultBox.style.display = "block";
+      resultBox.innerHTML = `
+        <b>Recommended Crop:</b> ${result.recommended_crop}<br/>
+        <b>Confidence:</b> ${result.confidence}
+      `;
+    }
+  }
+</script>
+
+</body>
+</html>
