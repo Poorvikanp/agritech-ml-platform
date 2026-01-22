@@ -13,12 +13,70 @@ model = joblib.load("AGriTech/crop_model.pkl")
 scaler = joblib.load("AGriTech/scaler.pkl")
 
 REQUIRED_FIELDS = ["N", "P", "K", "temperature", "humidity", "ph", "rainfall"]
+def analyze_soil_health(N, P, K, ph):
+    advice = {}
+
+    # Nitrogen analysis
+    if N < 50:
+        advice["nitrogen"] = "Low — add urea"
+        n_status = "Low"
+    elif 50 <= N <= 100:
+        advice["nitrogen"] = "Optimal"
+        n_status = "Optimal"
+    else:
+        advice["nitrogen"] = "High — reduce fertilizer"
+        n_status = "High"
+
+    # Phosphorus analysis
+    if P < 40:
+        advice["phosphorus"] = "Low — add DAP"
+        p_status = "Low"
+    elif 40 <= P <= 80:
+        advice["phosphorus"] = "Optimal"
+        p_status = "Optimal"
+    else:
+        advice["phosphorus"] = "High — reduce fertilizer"
+        p_status = "High"
+
+    # Potassium analysis
+    if K < 40:
+        advice["potassium"] = "Low — add potash"
+        k_status = "Low"
+    elif 40 <= K <= 80:
+        advice["potassium"] = "Optimal"
+        k_status = "Optimal"
+    else:
+        advice["potassium"] = "High — reduce fertilizer"
+        k_status = "High"
+
+    # pH analysis
+    if ph < 5.5:
+        advice["ph"] = "Acidic — add lime"
+        ph_status = "Low"
+    elif 5.5 <= ph <= 7.5:
+        advice["ph"] = "Neutral"
+        ph_status = "Optimal"
+    else:
+        advice["ph"] = "Alkaline — add organic matter"
+        ph_status = "High"
+
+    # Overall soil health
+    optimal_count = [n_status, p_status, k_status, ph_status].count("Optimal")
+
+    if optimal_count >= 3:
+        soil_health = "Good"
+    elif optimal_count == 2:
+        soil_health = "Moderate"
+    else:
+        soil_health = "Poor"
+
+    return soil_health, advice
+
 
 
 @app.route("/")
 def home():
     return render_template("index.html")
-
 
 @app.route("/predict-crop", methods=["POST"])
 def predict_crop():
@@ -58,9 +116,16 @@ def predict_crop():
         probabilities = model.predict_proba(input_scaled)[0]
         confidence = max(probabilities) * 100
 
+        # 🔥 Soil health analysis
+        soil_health, nutrient_advice = analyze_soil_health(
+            values[0], values[1], values[2], values[5]
+        )
+
         return jsonify({
             "recommended_crop": str(prediction),
             "confidence": f"{confidence:.2f}%",
+            "soil_health": soil_health,
+            "nutrient_advice": nutrient_advice,
             "input_received": {
                 "N": values[0],
                 "P": values[1],
@@ -77,6 +142,7 @@ def predict_crop():
             "error": "Prediction failed",
             "details": str(e)
         }), 500
+
 
 
 
