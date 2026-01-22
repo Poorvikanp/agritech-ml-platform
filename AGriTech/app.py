@@ -46,10 +46,26 @@ def predict_crop():
     try:
         input_data = np.array([values])
         input_scaled = scaler.transform(input_data)
+
+        # Predict class
         prediction = model.predict(input_scaled)[0]
 
+        # Predict probabilities
+        probabilities = model.predict_proba(input_scaled)[0]
+        confidence = max(probabilities) * 100
+
         return jsonify({
-            "recommended_crop": str(prediction)
+            "recommended_crop": str(prediction),
+            "confidence": f"{confidence:.2f}%",
+            "input_received": {
+                "N": values[0],
+                "P": values[1],
+                "K": values[2],
+                "temperature": values[3],
+                "humidity": values[4],
+                "ph": values[5],
+                "rainfall": values[6]
+            }
         })
 
     except Exception as e:
@@ -57,6 +73,7 @@ def predict_crop():
             "error": "Prediction failed",
             "details": str(e)
         }), 500
+
 
 
 if __name__ == "__main__":
