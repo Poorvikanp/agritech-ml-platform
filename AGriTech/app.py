@@ -1,8 +1,6 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 import joblib
 import numpy as np
-from flask import render_template
-
 
 print("Starting Flask app...")
 
@@ -13,6 +11,10 @@ model = joblib.load("AGriTech/crop_model.pkl")
 scaler = joblib.load("AGriTech/scaler.pkl")
 
 REQUIRED_FIELDS = ["N", "P", "K", "temperature", "humidity", "ph", "rainfall"]
+
+# -------------------------------
+# Soil Health Analysis
+# -------------------------------
 def analyze_soil_health(N, P, K, ph):
     advice = {}
 
@@ -73,10 +75,43 @@ def analyze_soil_health(N, P, K, ph):
     return soil_health, advice
 
 
+# -------------------------------
+# Weather Risk Analysis
+# -------------------------------
+def analyze_weather_risks(temperature, humidity, rainfall):
+    alerts = []
 
+    # Rainfall risks
+    if rainfall > 250:
+        alerts.append("High rainfall — risk of flooding")
+    elif rainfall < 50:
+        alerts.append("Low rainfall — drought risk")
+
+    # Temperature risks
+    if temperature > 35:
+        alerts.append("High temperature — heat stress risk")
+    elif temperature < 10:
+        alerts.append("Low temperature — cold stress risk")
+
+    # Humidity risks
+    if humidity > 85:
+        alerts.append("High humidity — fungal disease risk")
+    elif humidity < 30:
+        alerts.append("Low humidity — dry air stress")
+
+    if not alerts:
+        alerts.append("Weather conditions are favorable")
+
+    return alerts
+
+
+# -------------------------------
+# Routes
+# -------------------------------
 @app.route("/")
 def home():
     return render_template("index.html")
+
 
 @app.route("/predict-crop", methods=["POST"])
 def predict_crop():
@@ -116,9 +151,14 @@ def predict_crop():
         probabilities = model.predict_proba(input_scaled)[0]
         confidence = max(probabilities) * 100
 
-        # 🔥 Soil health analysis
+        # Soil health analysis
         soil_health, nutrient_advice = analyze_soil_health(
             values[0], values[1], values[2], values[5]
+        )
+
+        # Weather risk analysis
+        weather_alerts = analyze_weather_risks(
+            values[3], values[4], values[6]
         )
 
         return jsonify({
@@ -126,6 +166,7 @@ def predict_crop():
             "confidence": f"{confidence:.2f}%",
             "soil_health": soil_health,
             "nutrient_advice": nutrient_advice,
+            "weather_alerts": weather_alerts,
             "input_received": {
                 "N": values[0],
                 "P": values[1],
@@ -142,8 +183,6 @@ def predict_crop():
             "error": "Prediction failed",
             "details": str(e)
         }), 500
-
-
 
 
 if __name__ == "__main__":
