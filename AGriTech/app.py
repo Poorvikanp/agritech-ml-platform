@@ -1,16 +1,28 @@
 from flask import Flask, request, jsonify, render_template
 import joblib
 import numpy as np
+from PIL import Image
+import tensorflow as tf
+
 
 print("Starting Flask app...")
 
 app = Flask(__name__)
+# Load disease detection model
+disease_model = tf.keras.models.load_model("AGriTech/disease_model.h5")
 
 # Load saved model and scaler
 model = joblib.load("AGriTech/crop_model.pkl")
 scaler = joblib.load("AGriTech/scaler.pkl")
 
 REQUIRED_FIELDS = ["N", "P", "K", "temperature", "humidity", "ph", "rainfall"]
+DISEASE_CLASSES = [
+    "Healthy",
+    "Leaf Blight",
+    "Rust",
+    "Powdery Mildew"
+]
+
 
 # -------------------------------
 # Soil Health Analysis
@@ -103,6 +115,11 @@ def analyze_weather_risks(temperature, humidity, rainfall):
         alerts.append("Weather conditions are favorable")
 
     return alerts
+def preprocess_image(image):
+    image = image.resize((224, 224))
+    image = np.array(image) / 255.0
+    image = np.expand_dims(image, axis=0)
+    return image
 
 
 # -------------------------------
@@ -183,6 +200,49 @@ def predict_crop():
             "error": "Prediction failed",
             "details": str(e)
         }), 500
+@app.route("/detect-disease", methods=["POST"])
+def detect_disease():
+    if "file" not in request.files:
+        return jsonify({"error": "No file uploaded"}), 400
+
+    file = request.files["file"]
+
+    if file.filename == "":
+        return jsonify({"error": "No selected file"}), 400
+
+    try:
+        image = Image.open(file.stream).convert("RGB")
+        processed_image = preprocess_image(image)
+
+        predictions = disease_model.predict(processed_image)[0]
+        class_index = np.argmax(predictions)
+        confidence = predictions[class_index] * 100
+
+        disease_name = DISEASE_CLASSES[class_index]
+
+        treatment_advice = get_treatment_advice(disease_name)
+
+        return jsonify({
+            "disease": disease_name,
+            "confidence": f"{confidence:.2f}%",
+            "treatment_advice": treatment_advice
+        })
+
+    except Exception as e:
+        return jsonify({
+            "error": "Disease detection failed",
+            "details": str(e)
+        }), 500
+def get_treatment_advice(disease):
+    advice_map = {
+        "Healthy": "No treatment needed. Keep monitoring the crop.",
+        "Leaf Blight": "Use copper-based fungicides and remove infected leaves.",
+        "Rust": "Apply sulfur fungicide and improve air circulation.",
+        "Powdery Mildew": "Use neem oil or potassium bicarbonate spray."
+    }
+
+    return advice_map.get(disease, "Consult an agriculture expert.")
+
 
 
 if __name__ == "__main__":
