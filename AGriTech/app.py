@@ -3,6 +3,8 @@ import joblib
 import numpy as np
 from PIL import Image
 import tensorflow as tf
+from rag_engine import RAGEngine
+
 
 
 print("Starting Flask app...")
@@ -14,6 +16,9 @@ disease_model = tf.keras.models.load_model("AGriTech/disease_model.h5")
 # Load saved model and scaler
 model = joblib.load("AGriTech/crop_model.pkl")
 scaler = joblib.load("AGriTech/scaler.pkl")
+
+rag_engine = RAGEngine("AGriTech/rag_docs")
+
 
 REQUIRED_FIELDS = ["N", "P", "K", "temperature", "humidity", "ph", "rainfall"]
 DISEASE_CLASSES = [
@@ -244,6 +249,46 @@ def get_treatment_advice(disease):
     return advice_map.get(disease, "Consult an agriculture expert.")
 
 
+@app.route("/ask-farmer", methods=["POST"])
+def ask_farmer():
+    data = request.get_json()
+
+    if not data or "question" not in data:
+        return jsonify({"error": "Question not provided"}), 400
+
+    question = data["question"]
+
+    retrieved_docs = rag_engine.retrieve(question)
+
+    if not retrieved_docs:
+        return jsonify({"answer": "No relevant information found."})
+
+    context = retrieved_docs[0]["content"]
+
+    answer = generate_answer(question, context)
+
+    return jsonify({
+        "question": question,
+        "answer": answer,
+        "sources": [retrieved_docs[0]["doc_name"]]
+    })
+def generate_answer(question, context):
+    # Simple rule-based generation
+    sentences = context.split("\n")
+    relevant = []
+
+    for s in sentences:
+        if any(word.lower() in s.lower() for word in question.split()):
+            relevant.append(s)
+
+    if not relevant:
+        relevant = sentences[:3]
+
+    answer = " ".join(relevant)
+    return answer.strip()
+
+
 
 if __name__ == "__main__":
     app.run(debug=True)
+    
